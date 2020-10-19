@@ -13,7 +13,7 @@ def invertible_1x1_conv(z, logdet, forward=True):
     if forward:
         # Forward computation
         _w = tf.reshape(w, [1,1,c,c])
-        z = tf.keras.layers.conv2d(z, _w, strides = [1, 1, 1, 1], padding = 'same')
+        z = tf.keras.layers.conv2d(z, _w, strides = [1,1,1,1], padding = 'same')
         logdet += dlogdet
         return z, logdet
     else:
