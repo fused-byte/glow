@@ -84,7 +84,7 @@ class ACL(tfp.bijectors.Bijector):
 def realnvp_test():
     realnvp = ACL(output_shape=4, n_hidden=[256, 256])
     x = tf.keras.Input([16, 16, 4])
-    print("dfhghyu",x)
+
     y = realnvp.forward(x)
     print("trainable_variables :", len(realnvp.trainable_variables))
     print('trainable variable NN: ', len(realnvp.nn.trainable_variables))
