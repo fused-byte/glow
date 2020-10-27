@@ -26,7 +26,8 @@ class model(tfb.Bijector):
         self.L = L
         self.K = K
         self.layers = []
-        self.embedding = []
+        self.embedding_forward = []
+        self.embedding_inverse = []
         self.input_shapes = self._get_input_shapes(input_size, L)
         self.unsqueeze_layers = []
         for i in range(L-1):
@@ -43,23 +44,50 @@ class model(tfb.Bijector):
             self.unsqueeze_layers.append(squeeze_invert)
 
     def _forward(self, x):
+        embedding = []
         for i in range(len(self.layers)):
             if i % K+1 == 0:
                 z1, z2 = self.layers[i].forward(x)
-                self.embedding.append(z1)
+                embedding.append(z1)
                 x = z2
             else:
                 x = self.layers[i].forward(x)
+
+        self.embedding_forward = embedding
         
         for i in range(len(self.unsqueeze_layers)):
             x = self.unsqueeze_layers[i].forward(x)
-            if i < L-1:
-                x = tf.concat([self.embedding[L-2-i], x], axis=-1)
+            if i < self.L-1:
+                x = tf.concat([embedding[self.L-2-i], x], axis=-1)
         return x
 
     def _inverse(self, x):
-        for 
-            
+        embedding = []
+        for i in range(len(self.unsqueeze_layers)):
+            x = self.unsqueeze_layers[i].inverse(x)
+            if i < L-1:
+                z1, z2 = tf.split(x, 2, axis = -1)
+                embedding.append(z1)
+                x = z2
+        
+        self.embedding_inverse = embedding
+        embedding_ptr = len(self.embedding_inverse)-1
+
+        layers_len = len(self.layers)
+        for i in range(layers_len):
+            x = self.layers[layers_len-i-1].inverse(x)
+            if (layers_len-i-1) % K+1 == 0:
+                x = self.layers[layers_len-i-1].inverse(embedding[embedding_ptr])
+                embedding_ptr -= 1
+
+        return x
+
+    #def _forward_log_det_jacobian(self, x):
+
+
+    #def _inverse_log_det_jacobian(self, x):
+        
+    
     def _flow_steps(self, K, input_shape, name):
         flow_steps_list = []
         for i in range(K):
