@@ -57,8 +57,11 @@ def invertible_1x1_conv_LU(event_size, batch_shape=(), seed=None, dtype=tf.float
                         initial_value=permutation,
                         trainable=False,
                         name='permutation')
-
+        # print("lower upper: ", lower_upper)
     inv_conv = tfb.MatvecLU(lower_upper, permutation, name=name)
+
+    # x = tf.random.uniform(shape=[2, 28, 28, 3], dtype=tf.float32)
+    # print("det jacobian", inv_conv.inverse_log_det_jacobian(x,event_ndims=3)/inv_conv.inverse_log_det_jacobian(x,event_ndims=1))
     return inv_conv
 
 def build_model(channels=3):
@@ -104,13 +107,14 @@ def test_conv1x1():
         loss = out_x - real_x
     print(tf.math.reduce_sum(real_x - out_x))
     print(example_model.predict(real_x).shape)
+    # print("log prob: ", example_model.log_prob(real_x))
     # => nealy 0
     # ex. tf.Tensor(1.3522818e-05, shape=(), dtype=float32)
 
     try:
-        print(tape.gradient(loss, real_x).shape)
+        print("gradient: ",tape.gradient(loss, real_x).shape)
     except Exception as e:
         print('Cannot Calculate Gradient')
         print(e)
         
-# test_conv1x1()
+test_conv1x1()

@@ -13,7 +13,7 @@ class NN(keras.layers.Layer):
             n_hidden=[512,512], 
             stride = [1,1],
             padding="SAME",
-            name=None):
+            name="nn"):
         if name:
             super(NN,self).__init__(name=name)
         else:
@@ -26,13 +26,17 @@ class NN(keras.layers.Layer):
         self.conv1 = keras.layers.Conv2D(n_hidden[0], kernel_size = kernel_size[0], strides=stride, padding=padding, activation=activation, name=name+"/conv_1")
         self.conv2 = keras.layers.Conv2D(n_hidden[1], kernel_size = kernel_size[1], strides=stride, padding=padding, activation=activation, name=name+"/conv_2")
         self.conv3 = keras.layers.Conv2D(output_shape, kernel_size=[3,3], strides = stride,  kernel_initializer="zeros", padding=padding, name=name+"/conv_3")
+        # self.conv3 = keras.layers.Conv2D(output_shape, kernel_size=[3,3], strides = stride, padding=padding, name=name+"/conv_3")
 
     def call(self,x):
         # print("weights: ", self.conv1.weights)
+        # print("conv1 input: ", x.shape)
         x = self.conv1(x)
+        # print("conv2 input: ", x.shape)
         x = self.conv2(x)
+        # print("conv3 input: ", x.shape)
         x = self.conv3(x)
-        print("output: ", x)
+        # print("output: ", x.shape)
         return x
 
 
@@ -49,28 +53,36 @@ class ACL(tfp.bijectors.Bijector):
             name=name)
 
         self.output_shape = output_shape
-        self.nn = NN(self.output_shape, name=name+"/NN", **kwargs)
-
+        self.nn_obj = NN(self.output_shape[-1], name=name+"/NN", **kwargs)
+        k_inp = self.output_shape.copy()
+        k_inp[-1] = self.output_shape[-1] // 2
+        
+        x = tf.keras.Input(k_inp)
+        # print("keras input: ", x.shape)
+        h = self.nn_obj(x)
+        self.nn = tf.keras.Model(x, [h], name=self.name + "/nn")
+        
     def _forward(self, x):
         # print()
         x_a, x_b = tf.split(x, 2, axis = -1)
         y_b = x_b
         h = self.nn(x_b)
         t = h[:,:,:,0::2]
-        scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
-        # log_s = keras.activations.tanh(h[:,:,:,1::2])
-        # scale = tf.math.exp(log_s)
+        # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
+        log_s = keras.activations.tanh(h[:,:,:,1::2])
+        scale = tf.math.exp(log_s)
         y_a = scale * (x_a + t)
         y = tf.concat([y_a,y_b], axis=-1)
         return y
 
     def _inverse(self, y):
         y_a, y_b = tf.split(y, 2, axis = -1)
+        # print('This is y_b shape : ', y_b.shape)
         h = self.nn(y_b)
         t = h[:,:,:,0::2]
-        scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
-        # log_s = keras.activations.tanh(h[:,:,:,1::2])
-        # scale = tf.math.exp(log_s)
+        # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
+        log_s = keras.activations.tanh(h[:,:,:,1::2])
+        scale = tf.math.exp(log_s)
         x_a = (y_a/scale) - t
         x_b = y_b
         x = tf.concat([x_a, x_b], axis = -1)
@@ -79,18 +91,30 @@ class ACL(tfp.bijectors.Bijector):
     def _forward_log_det_jacobian(self, x, event_ndims=3):
         _ , x_b = tf.split(x, 2, axis = -1)
         h = self.nn(x_b)
-        # log_s = keras.activations.tanh(h[:,:,:,1::2])
-        # scale = tf.math.exp(log_s)
-        scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
+        log_s = keras.activations.tanh(h[:,:,:,1::2])
+        scale = tf.math.exp(log_s)
+        # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
         # log_s = tf.math.log(scale)
 
-        # print("log scale values", log_s)
+        print("log scale values", scale)
         # print("test: ", K.eval(tf.reduce_sum(log_s, axis = [1,2,3])))
         return tf.reduce_sum(tf.math.log(tf.math.abs(scale)), axis = [1,2,3])
 
 
+def nn_test():
+    nn = NN(4, name="NN")
+    x = tf.random.normal([3, 32, 32, 4])
+    x = tf.keras.Input([32,32,2])
+    print(x.shape)
+    log_s = nn(x)
+    print(log_s)
+    # Non trainable params: -> Batch Normalization's params
+    tf.keras.Model(x, [log_s], name="nn_test").summary()
+
+# nn_test()
+
 def realnvp_test():
-    realnvp = ACL(output_shape=4, n_hidden=[256, 256])
+    realnvp = ACL(output_shape=[16, 16, 4], n_hidden=[256, 256])
     x = tf.keras.Input([16, 16, 4])
 
     y = realnvp.forward(x)

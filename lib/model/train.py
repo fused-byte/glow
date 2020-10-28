@@ -39,8 +39,8 @@ def main():
     # x = tf.random.normal([3, 32, 32, 3])
     # y = flow_distribution.bijector.forward(x)
     # z = flow_distribution.bijector.inverse(y)
-    # fig = plt.figure(figsize=(8,8))
-    # fig.add_subplot(1,2,1)
+    fig = plt.figure(figsize=(8,8))
+    fig.add_subplot(1,2,1)
     # plt.imshow(x[0])
     # # plt.show()
     # fig.add_subplot(1,2,2)
@@ -53,10 +53,18 @@ def main():
     def loss():
         x_ = np.clip(np.floor(x), 0, 255) /255.0
         x_.astype(np.float32)
-        print(np.max(x_[0,:,:,:]))
+        # print("input x: ", np.around(x_[0], 3))
+        #plt.imshow(x[0])
+        #plt.show()
+        # print(np.max(x_[0,:,:,:]))
         print("bpd factor: ", bpd_factor, x_.shape)
-        print(tf.reduce_mean(flow_distribution.log_prob(x_)))
-        return -tf.reduce_mean(flow_distribution.log_prob(x_)) / bpd_factor
+        log_det = tf.reduce_mean(flow_distribution.log_prob(x_))
+        print("log det: ", log_det)
+        # if log_det.numpy() == np.nan:
+        #     return log_det
+        # else:
+        #     return log_det / bpd_factor
+        return tf.constant(1234)
 
     optimizer = tf.optimizers.Adam(learning_rate=learning_rate) 
     log = tf.summary.create_file_writer('checkpoints')
@@ -77,7 +85,7 @@ def main():
 
     flag = False
 
-    for e in range(epochs):
+    for e in range(1):
         if flag:
             break
         for i in range(train_its):
@@ -85,9 +93,14 @@ def main():
             # print(x.shape)
             with tf.GradientTape() as tape:
                 log_prob_loss = loss()
+                print('log prob loss : ', log_prob_loss)
             
-            grads = tape.gradient(loss, flow.trainable_variables)
+            print('This is flow train vars : ', len(flow.trainable_variables))
+            grads = tape.gradient(log_prob_loss, flow.trainable_variables)
+            print('This is grad value :', grads)
+            break
             optimizer.apply_gradients(zip(grads, flow.trainable_variables))
+            print("returned log prob loss: ", log_prob_loss)
             if tf.math.is_nan(log_prob_loss):
                 flag = True
                 break

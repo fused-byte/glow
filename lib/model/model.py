@@ -47,6 +47,8 @@ class Flow(tfb.Bijector):
             squeeze_invert = tfb.Invert(squeeze.Squeeze(2, name=name+"/unsqueeze_{}".format(L-i)))
             self.unsqueeze_layers.append(squeeze_invert)
         print("total layers: ", len(self.layers) + len(self.unsqueeze_layers))
+
+
     def _forward(self, x):
         embedding = []
         fldjs = []
@@ -64,13 +66,13 @@ class Flow(tfb.Bijector):
             else:
                 # print("inside else ")
                 x = self.layers[i].forward(x)
-                fldjs.append(self.layers[i].forward_log_det_jacobian(x, event_ndims=3))
+                fldjs.append(self.layers[i].forward_log_det_jacobian(x, event_ndims=3).numpy().tolist())
 
         self.embedding_forward = embedding
         
         for i in range(len(self.unsqueeze_layers)):
             x = self.unsqueeze_layers[i].forward(x)
-            fldjs.append(self.unsqueeze_layers[i].forward_log_det_jacobian(x, event_ndims=3))
+            fldjs.append(self.unsqueeze_layers[i].forward_log_det_jacobian(x, event_ndims=3).numpy().tolist())
             if i < self.L-1:
                 x = tf.concat([embedding[self.L-2-i], x], axis=-1)
         
@@ -84,7 +86,7 @@ class Flow(tfb.Bijector):
         for i in range(len(self.unsqueeze_layers)):
             x = self.unsqueeze_layers[i].inverse(x)
             # print("shit", self.unsqueeze_layers[i].inverse_log_det_jacobian(x, event_ndims=3))
-            ildjs.append(self.unsqueeze_layers[i].inverse_log_det_jacobian(x, event_ndims=3))
+            ildjs.append(self.unsqueeze_layers[i].inverse_log_det_jacobian(x, event_ndims=3).numpy())
             if i < self.L-1:
                 z1, z2 = tf.split(x, 2, axis = -1)
                 embedding.append(z1)
@@ -100,7 +102,7 @@ class Flow(tfb.Bijector):
             if "split" in self.layers[layers_len-i-1].name:
                 # print(x.shape, embedding[embedding_ptr].shape)
                 x = self.layers[layers_len-i-1].inverse([embedding[embedding_ptr], x])
-                ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(embedding[embedding_ptr], event_ndims=3))
+                ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(embedding[embedding_ptr], event_ndims=3).numpy())
                 embedding_ptr -= 1
                 # print(x.shape)
             else:
@@ -108,24 +110,37 @@ class Flow(tfb.Bijector):
                 # print(tf.executing_eagerly())
                 # print(tf.get_static_value(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3)))
                 # print("shit 2: ", self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy())
-                ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3))
+                if "inv_conv_1x1_" in self.layers[layers_len-i-1].name:
+                    ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy()/(32*32))
+                else:
+                    ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy())
         
         self.ildjs = ildjs
         
         return x
 
     def _forward_log_det_jacobian(self, x):
-
+        print("*************************called**********")
         return sum(self.fldjs)
 
     def _inverse_log_det_jacobian(self, x):
-        # for i in range(len(self.ildjs)):
+        sum_ildjs = 0
+        for i in range(len(self.ildjs)):
 
-        #     print("inverse ildjs: {}".format(i+1),self.ildjs[i], self.ildjs[i].shape)
-        #     if self.ildjs[i].shape == (4,):
+            print("inverse ildjs: {}".format(i+1),self.ildjs[i], self.ildjs[i].shape)
+            if self.ildjs[i].shape == (4,):
+                if self.ildjs[i][0] == np.nan:
+                    return sum_ildjs
+                sum_ildjs += sum(self.ildjs[i])
+            else:
+                if self.ildjs[i] == np.nan:
+                    return sum_ildjs
+                sum_ildjs += self.ildjs[i]
         #         print(tf.get_static_value(self.ildjs[i], partial=True))
                 # print(K.eval(self.ildjs[i]))
-        return sum(self.ildjs)
+            
+        print("inverse ildjs: ", sum_ildjs)
+        return sum_ildjs
         
     
     def _flow_steps(self, K, input_shape, name):
@@ -133,7 +148,7 @@ class Flow(tfb.Bijector):
         for i in range(K):
             act_norm = activation_normalization.ACT(input_shape[-1], False, name=name+"/actnorm_{}".format(i))
             inv_conv = conv_1x1_inv.invertible_1x1_conv_LU(input_shape[-1], name=name+"/inv_conv_1x1_{}".format(i))
-            acl = affine_coupling_layer.ACL(input_shape[-1], name=name+"/acl_{}".format(i))
+            acl = affine_coupling_layer.ACL(input_shape, name=name+"/acl_{}".format(i))
             flow_steps_list.append(act_norm)
             flow_steps_list.append(inv_conv)
             flow_steps_list.append(acl)
