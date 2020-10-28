@@ -36,8 +36,9 @@ def get_data(dataset, batch_size):
 
     train_iterator = make_iterator(train_flow)
     test_iterator = make_iterator(test_flow)
+
     return train_iterator, test_iterator
 
 
 train_iterator, test_iterator = get_data(dataset, 32)
-print(train_iterator())
+# print(train_iterator())

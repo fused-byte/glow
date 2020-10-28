@@ -12,11 +12,11 @@ class bijector_split(tfb.Bijector):
         z1, z2 = tf.split(x, 2, axis=-1)
         return z1,z2
 
-    def _inverse(self, z1,z2):
-        z = tf.concat([z1,z2], axis=-1)
+    def _inverse(self, z):
+        z = tf.concat([z[0],z[1]], axis=-1)
         return z
 
-    def _forward_log_det_jacobian(self, x):
+    def _forward_log_det_jacobian(self, x, event_ndims=0):
         return tf.constant(0.0)
 
         

@@ -17,7 +17,6 @@ class Squeeze(tfb.Bijector):
         temp_shape = (batch_size, h//self.factor, self.factor, w//self.factor, self.factor, c)
         output_shape = (batch_size, h//self.factor, w//self.factor, c*self.factor*self.factor)
         transpose_permutation = [0, 1, 3, 5, 2, 4]
-        test = np.reshape(x, temp_shape)
         x = tf.reshape(x, temp_shape)
         x = tf.transpose(x, transpose_permutation)
         x = tf.reshape(x, output_shape)
@@ -26,7 +25,7 @@ class Squeeze(tfb.Bijector):
     def _inverse(self, y):
         (h,w,c) = y.shape[1:]
         batch_size = y.shape[0]
-        temp_shape = (batch_size, h, w, c//(elf.factor*self.factor), self.factor, self.factor)
+        temp_shape = (batch_size, h, w, c//(self.factor*self.factor), self.factor, self.factor)
         output_shape = (batch_size, h*self.factor, w*self.factor, c//(self.factor*self.factor))
         transpose_permutation = [0, 1, 4, 2, 5, 3]
         y = tf.reshape(y, temp_shape)
@@ -34,7 +33,10 @@ class Squeeze(tfb.Bijector):
         y = tf.reshape(y, output_shape)
         return y
 
-    def _forward_log_det_jacobian(self, x):
+    def _forward_log_det_jacobian(self, x, event_ndims=0):
+        return tf.constant(0.0)
+    
+    def _inverse_log_det_jacobian(self, x, event_ndims=0):
         return tf.constant(0.0)
 
 def test_squeeze():
@@ -55,5 +57,6 @@ def test_squeeze():
     y = flow.bijector.forward(x)
     log_prob = flow.log_prob(y)
     print(x.shape, y.shape, log_prob.shape)
-
-test_squeeze()
+    print(squeeze._forward_log_det_jacobian(x))
+    
+# test_squeeze()

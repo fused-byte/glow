@@ -103,6 +103,7 @@ def test_conv1x1():
         out_x = out_x
         loss = out_x - real_x
     print(tf.math.reduce_sum(real_x - out_x))
+    print(example_model.predict(real_x).shape)
     # => nealy 0
     # ex. tf.Tensor(1.3522818e-05, shape=(), dtype=float32)
 
@@ -112,4 +113,4 @@ def test_conv1x1():
         print('Cannot Calculate Gradient')
         print(e)
         
-test_conv1x1()
+# test_conv1x1()
