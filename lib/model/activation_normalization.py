@@ -13,8 +13,8 @@ class ACT(tfp.bijectors.Bijector):
           name=name)
         self.log_scale_factor = log_scale_factor
         self.initialized = False
-        self.log_scale = tf.Variable( tf.random.normal([channels]), name="logScale")
-        self.bias = tf.Variable(tf.random.normal([channels]),name="bias")
+        self.log_scale = tf.Variable( tf.random.normal([channels]), name=name + "/logScale")
+        self.bias = tf.Variable(tf.random.normal([channels]),name=name + "/bias")
 
     def actnorm_mean_var(self, x):
         mean = tf.reduce_mean(x, axis=[0, 1, 2])
@@ -22,8 +22,8 @@ class ACT(tfp.bijectors.Bijector):
         stdVar = tf.math.sqrt(var) + 1e-6
         log_scale = tf.math.log(1./ stdVar / self.log_scale_factor) * self.log_scale_factor
         # print('log scale shape: ', log_scale.shape)
-        self.bias = -mean
-        self.log_scale = log_scale
+        self.bias.assign(-mean)
+        self.log_scale.assign(log_scale)
 
     def _forward(self, x):
         if not self.initialized:
@@ -67,5 +67,7 @@ def test_actnorm():
     print('log_det_jacobian: ', actnorm.inverse_log_det_jacobian(y, event_ndims=3).numpy()/256)
     print(tf.shape(y))
     print(tf.size(tf.shape(y)))
-test_actnorm()
+    print('trainable variables',actnorm.trainable_variables)
+
+# test_actnorm()
         

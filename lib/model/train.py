@@ -60,11 +60,11 @@ def main():
         print("bpd factor: ", bpd_factor, x_.shape)
         log_det = tf.reduce_mean(flow_distribution.log_prob(x_))
         print("log det: ", log_det)
-        # if log_det.numpy() == np.nan:
-        #     return log_det
-        # else:
-        #     return log_det / bpd_factor
-        return tf.constant(1234)
+        if log_det.numpy() == np.nan:
+            return log_det
+        else:
+            return log_det / bpd_factor
+        # return tf.constant(1234)
 
     optimizer = tf.optimizers.Adam(learning_rate=learning_rate) 
     log = tf.summary.create_file_writer('checkpoints')
@@ -95,19 +95,20 @@ def main():
                 log_prob_loss = loss()
                 print('log prob loss : ', log_prob_loss)
             
-            print('This is flow train vars : ', len(flow.trainable_variables))
+            for f_var in flow.trainable_variables:
+                print('This is flow train vars : ', f_var.name)
             grads = tape.gradient(log_prob_loss, flow.trainable_variables)
-            print('This is grad value :', grads)
+            # print('This is grad value :', grads)
             break
             optimizer.apply_gradients(zip(grads, flow.trainable_variables))
-            print("returned log prob loss: ", log_prob_loss)
+            # print("returned log prob loss: ", log_prob_loss)
             if tf.math.is_nan(log_prob_loss):
                 flag = True
                 break
             avg_loss.update_state(log_prob_loss)
             
-            if tf.equal(optimizer.iterations % 1000, 0):
-                print("Step {} Loss {:.6f}".format(optimizer.iterations, avg_loss.result()))
+            # if tf.equal(optimizer.iterations % 1000, 0):
+            print("Step {} Loss {:.6f}".format(optimizer.iterations, avg_loss.result()))
             if tf.equal(optimizer.iterations % 100, 0):
                 with log.as_default():
                     tf.summary.scalar("loss", avg_loss.result(), step=optimizer.iterations)

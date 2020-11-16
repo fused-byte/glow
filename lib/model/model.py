@@ -111,7 +111,7 @@ class Flow(tfb.Bijector):
                 # print(tf.get_static_value(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3)))
                 # print("shit 2: ", self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy())
                 if "inv_conv_1x1_" in self.layers[layers_len-i-1].name:
-                    ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy()/(32*32))
+                    ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy())
                 else:
                     ildjs.append(self.layers[layers_len-i-1].inverse_log_det_jacobian(x, event_ndims=3).numpy())
         
