@@ -96,7 +96,7 @@ class ACL(tfp.bijectors.Bijector):
         # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
         # log_s = tf.math.log(scale)
 
-        print("log scale values", scale)
+        # print("log scale values", scale)
         # print("test: ", K.eval(tf.reduce_sum(log_s, axis = [1,2,3])))
         return tf.reduce_sum(tf.math.log(tf.math.abs(scale)), axis = [1,2,3])
 

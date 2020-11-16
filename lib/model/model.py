@@ -124,11 +124,12 @@ class Flow(tfb.Bijector):
         return sum(self.fldjs)
 
     def _inverse_log_det_jacobian(self, x):
+        print(x.shape)
         sum_ildjs = 0
         for i in range(len(self.ildjs)):
 
-            print("inverse ildjs: {}".format(i+1),self.ildjs[i], self.ildjs[i].shape)
-            if self.ildjs[i].shape == (4,):
+            # print("inverse ildjs: {}".format(i+1),self.ildjs[i], self.ildjs[i].shape)
+            if self.ildjs[i].shape == (x.shape[0],):
                 if self.ildjs[i][0] == np.nan:
                     return sum_ildjs
                 sum_ildjs += sum(self.ildjs[i])

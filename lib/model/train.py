@@ -22,7 +22,7 @@ def main():
     K=32
     epochs = 30
     learning_rate = 1e-4
-    BATCH_SIZE=4
+    BATCH_SIZE=16
     input_shape = [32,32,3]
 
     bpd_factor = np.log(2) * input_shape[0] * input_shape[1] * input_shape[2]
@@ -57,7 +57,7 @@ def main():
         #plt.imshow(x[0])
         #plt.show()
         # print(np.max(x_[0,:,:,:]))
-        print("bpd factor: ", bpd_factor, x_.shape)
+        # print("bpd factor: ", bpd_factor, x_.shape)
         log_det = tf.reduce_mean(flow_distribution.log_prob(x_))
         print("log det: ", log_det)
         if log_det.numpy() == np.nan:
@@ -85,7 +85,7 @@ def main():
 
     flag = False
 
-    for e in range(1):
+    for e in range(10):
         if flag:
             break
         for i in range(train_its):
@@ -93,13 +93,13 @@ def main():
             # print(x.shape)
             with tf.GradientTape() as tape:
                 log_prob_loss = loss()
-                print('log prob loss : ', log_prob_loss)
+                # print('log prob loss : ', log_prob_loss)
             
-            for f_var in flow.trainable_variables:
-                print('This is flow train vars : ', f_var.name)
+            # for f_var in flow.trainable_variables:
+            #     print('This is flow train vars : ', f_var.name)
             grads = tape.gradient(log_prob_loss, flow.trainable_variables)
             # print('This is grad value :', grads)
-            break
+            # break
             optimizer.apply_gradients(zip(grads, flow.trainable_variables))
             # print("returned log prob loss: ", log_prob_loss)
             if tf.math.is_nan(log_prob_loss):
@@ -108,7 +108,8 @@ def main():
             avg_loss.update_state(log_prob_loss)
             
             # if tf.equal(optimizer.iterations % 1000, 0):
-            print("Step {} Loss {:.6f}".format(optimizer.iterations, avg_loss.result()))
+            print("Epoch {} Step {} Loss {:.6f}".format(e, optimizer.iterations, avg_loss.result()))
+
             if tf.equal(optimizer.iterations % 100, 0):
                 with log.as_default():
                     tf.summary.scalar("loss", avg_loss.result(), step=optimizer.iterations)
