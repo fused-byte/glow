@@ -157,4 +157,4 @@ def realnvp_test():
         #               axis=flow._reduce_event_indices)
     )
 
-realnvp_test()
+#realnvp_test()

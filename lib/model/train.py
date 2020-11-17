@@ -34,7 +34,7 @@ def main():
     flow_distribution = tfd.TransformedDistribution(
                                 event_shape=input_shape,
                                 distribution=tfd.Normal(loc=0.0, scale=1.0),
-                                bijector=flow                       
+                                bijector=flow.flow_network                       
                             )
     # x = tf.random.normal([3, 32, 32, 3])
     # y = flow_distribution.bijector.forward(x)
@@ -58,7 +58,7 @@ def main():
         #plt.show()
         # print(np.max(x_[0,:,:,:]))
         # print("bpd factor: ", bpd_factor, x_.shape)
-        log_det = tf.reduce_mean(flow_distribution.log_prob(x_))
+        log_det = - tf.reduce_mean(flow_distribution.log_prob(x_))
         print("log det: ", log_det)
         if log_det.numpy() == np.nan:
             return log_det
