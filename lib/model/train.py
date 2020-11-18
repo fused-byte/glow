@@ -10,7 +10,7 @@ from pathlib import Path
 from model import Glow_Model, Flow
 import matplotlib.pyplot as plt
 import sys
-
+from tqdm import tqdm
 sys.path.insert(1, os.getcwd() + '/lib/dataset')
 import get_data
 tfd = tfp.distributions
@@ -20,9 +20,9 @@ print(os.getcwd())
 def main():
     L=3
     K=32
-    epochs = 30
-    learning_rate = 1e-4
-    BATCH_SIZE=16
+    epochs = 100
+    learning_rate = 1e-3
+    BATCH_SIZE=32
     input_shape = [32,32,3]
 
     bpd_factor = np.log(2) * input_shape[0] * input_shape[1] * input_shape[2]
@@ -51,14 +51,15 @@ def main():
 
     # @tf.function
     def loss():
-        x_ = np.clip(np.floor(x), 0, 255) /255.0
-        x_.astype(np.float32)
+        #x_ = np.clip(np.floor(x), 0, 255) /255.0
+       # x_ = (np.clip(np.floor(x), 0, 255)/(255.0/2.0)) - 1
+        #x_.astype(np.float32)
         # print("input x: ", np.around(x_[0], 3))
         #plt.imshow(x[0])
         #plt.show()
         # print(np.max(x_[0,:,:,:]))
         # print("bpd factor: ", bpd_factor, x_.shape)
-        log_det = - tf.reduce_mean(flow_distribution.log_prob(x_))
+        log_det = - tf.reduce_mean(flow_distribution.log_prob(x))
         print("log det: ", log_det)
         if log_det.numpy() == np.nan:
             return log_det
@@ -70,26 +71,29 @@ def main():
     log = tf.summary.create_file_writer('checkpoints')
     avg_loss = tf.keras.metrics.Mean(name='loss', dtype=tf.float32)
     dataset='mnist'
-    train_iterator, test_iterator = get_data.get_data(dataset, BATCH_SIZE)
-    train_its = int(60000/BATCH_SIZE)
+    #train_iterator, test_iterator = get_data.get_data(dataset, BATCH_SIZE)
+    #train_its = int(60000/BATCH_SIZE)
+    
+    train_iterator, test_iterator = get_data.get_data_alt(1000, BATCH_SIZE)
 
     #checkpointing 
     checkpoint_path=Path('./checkpoints/flow_train')
     ckpt = tf.train.Checkpoint(model=flow, optimizer=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt,
                                                 checkpoint_path,
-                                                max_to_keep=3)
+                                                max_to_keep=10)
     if ckpt_manager.latest_checkpoint:
         ckpt.restore(ckpt_manager.latest_checkpoint)
         print('[Flow] Latest checkpoint restored!!')
 
     flag = False
 
-    for e in range(10):
+    for e in range(epochs):
         if flag:
             break
-        for i in range(train_its):
-            x, y = train_iterator()
+        for i in tqdm(train_iterator):
+            x = i['img']
+            #x, y = train_iterator()
             # print(x.shape)
             with tf.GradientTape() as tape:
                 log_prob_loss = loss()
@@ -104,20 +108,21 @@ def main():
             # print("returned log prob loss: ", log_prob_loss)
             if tf.math.is_nan(log_prob_loss):
                 flag = True
+                print("loss is nan")
                 break
             avg_loss.update_state(log_prob_loss)
             
-            # if tf.equal(optimizer.iterations % 1000, 0):
-            print("Epoch {} Step {} Loss {:.6f}".format(e, optimizer.iterations, avg_loss.result()))
+            if tf.equal(optimizer.iterations % 100, 0):
+                print("Epoch {} Step {} Loss {:.6f}".format(e, optimizer.iterations.numpy(), avg_loss.result()))
 
             if tf.equal(optimizer.iterations % 100, 0):
                 with log.as_default():
                     tf.summary.scalar("loss", avg_loss.result(), step=optimizer.iterations)
                     avg_loss.reset_states()
         
-        ckpt_save_path = ckpt_manager.save()
-        print('Saving checkpoint for epoch {} at {}'.format(
-                e + 1, ckpt_save_path))
+                ckpt_save_path = ckpt_manager.save()
+                print('Saving checkpoint for epoch {} at {}'.format(
+                        e + 1, ckpt_save_path))
     # print(train_iterator())
 
 if __name__=="__main__":
