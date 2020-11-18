@@ -51,7 +51,7 @@ def main():
 
     # @tf.function
     def loss():
-        #x_ = np.clip(np.floor(x), 0, 255) /255.0
+        x_ = np.clip(np.floor(x), 0, 255) /255.0
        # x_ = (np.clip(np.floor(x), 0, 255)/(255.0/2.0)) - 1
         #x_.astype(np.float32)
         # print("input x: ", np.around(x_[0], 3))
@@ -59,7 +59,7 @@ def main():
         #plt.show()
         # print(np.max(x_[0,:,:,:]))
         # print("bpd factor: ", bpd_factor, x_.shape)
-        log_det = - tf.reduce_mean(flow_distribution.log_prob(x))
+        log_det = - tf.reduce_mean(flow_distribution.log_prob(x_))
         print("log det: ", log_det)
         if log_det.numpy() == np.nan:
             return log_det
@@ -71,10 +71,10 @@ def main():
     log = tf.summary.create_file_writer('checkpoints')
     avg_loss = tf.keras.metrics.Mean(name='loss', dtype=tf.float32)
     dataset='mnist'
-    #train_iterator, test_iterator = get_data.get_data(dataset, BATCH_SIZE)
-    #train_its = int(60000/BATCH_SIZE)
+    train_iterator, test_iterator = get_data.get_data(dataset, BATCH_SIZE)
+    train_its = int(60000/BATCH_SIZE)
     
-    train_iterator, test_iterator = get_data.get_data_alt(1000, BATCH_SIZE)
+    # train_iterator, test_iterator = get_data.get_data_alt(1000, BATCH_SIZE)
 
     #checkpointing 
     checkpoint_path=Path('./checkpoints/flow_train')
@@ -91,9 +91,10 @@ def main():
     for e in range(epochs):
         if flag:
             break
-        for i in tqdm(train_iterator):
-            x = i['img']
-            #x, y = train_iterator()
+        for i in range(train_its):
+        # for i in train_iterator:
+            # x = i['img']
+            x, y = train_iterator()
             # print(x.shape)
             with tf.GradientTape() as tape:
                 log_prob_loss = loss()
@@ -112,8 +113,8 @@ def main():
                 break
             avg_loss.update_state(log_prob_loss)
             
-            if tf.equal(optimizer.iterations % 100, 0):
-                print("Epoch {} Step {} Loss {:.6f}".format(e, optimizer.iterations.numpy(), avg_loss.result()))
+            # if tf.equal(optimizer.iterations % 100, 0):
+            print("Epoch {} Step {} Loss {:.6f}".format(e, optimizer.iterations.numpy(), avg_loss.result()))
 
             if tf.equal(optimizer.iterations % 100, 0):
                 with log.as_default():

@@ -61,6 +61,7 @@ def get_data_alt(batch_shuffle_size, batch_size):
 
         img = tf.cast(img, dtype=tf.float32)
         img = (img / (255.0 / 2)) - 1
+        # img = img/255.0
         feature["img"] = img
         feature["label"] = label
         return feature

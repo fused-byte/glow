@@ -92,7 +92,7 @@ class ACL(tfp.bijectors.Bijector):
         x = tf.concat([x_a, x_b], axis = -1)
         return x
 
-    def _forward_log_det_jacobian(self, x, event_ndims=3):
+    def _forward_log_det_jacobian(self, x):
         _ , x_b = tf.split(x, 2, axis = -1)
         log_s, _ = self.nn(x_b)
         # h = self.nn(x_b)
@@ -103,7 +103,7 @@ class ACL(tfp.bijectors.Bijector):
 
         # print("log scale values", scale)
         # print("test: ", K.eval(tf.reduce_sum(log_s, axis = [1,2,3])))
-        return tf.reduce_sum(tf.math.log(tf.math.abs(scale)), axis = [1,2,3])
+        return tf.reduce_sum(log_s)
 
 
 def nn_test():

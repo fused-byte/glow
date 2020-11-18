@@ -34,15 +34,15 @@ def invertible_1x1_conv_LU(event_size, batch_shape=(), seed=None, dtype=tf.float
                         event_size, dtype_hint=tf.int32, name='event_size')
         batch_shape = tf.convert_to_tensor(
                         batch_shape, dtype_hint=event_size.dtype, name='batch_shape')
-        random_matrix = tf.random.uniform(
+        random_matrix = tf.Variable(tf.random.uniform(
                         shape=tf.concat([batch_shape, [event_size, event_size]], axis=0),
                         dtype=dtype,
-                        seed=seed,
+                        seed=seed),
                         name='1x1_inv_conv_weights')
         #QR decomposition gives us 2 matrix
         # 0 index - orthogonal matrix which has orthornormal unit vector columns
         # 1 index Right upper triangular matrix.
-        random_orthornormal = tf.linalg.qr(random_matrix)[0]
+        random_orthornormal = tf.linalg.qr(random_matrix).q
 
         # we do LU decomposition of orthogonal matrix 
         # 0th index gives lower_upper triangular matrix
