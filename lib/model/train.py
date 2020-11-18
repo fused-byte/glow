@@ -10,6 +10,7 @@ from pathlib import Path
 from model import Glow_Model, Flow
 import matplotlib.pyplot as plt
 import sys
+from tqdm import tqdm
 
 sys.path.insert(1, os.getcwd() + '/lib/dataset')
 import get_data
@@ -51,14 +52,16 @@ def main():
 
     # @tf.function
     def loss():
-        x_ = np.clip(np.floor(x), 0, 255) /255.0
-        x_.astype(np.float32)
+        # x_ = np.clip(np.floor(x), 0, 255) /255.0
+        # x_ = x /127.5
+        # x_ -= 1
+        # x_.astype(np.float32)
         # print("input x: ", np.around(x_[0], 3))
         #plt.imshow(x[0])
         #plt.show()
         # print(np.max(x_[0,:,:,:]))
         # print("bpd factor: ", bpd_factor, x_.shape)
-        log_det = tf.reduce_mean(flow_distribution.log_prob(x_))
+        log_det = tf.reduce_mean(flow_distribution.log_prob(x))
         print("log det: ", log_det)
         if log_det.numpy() == np.nan:
             return log_det
@@ -70,8 +73,8 @@ def main():
     log = tf.summary.create_file_writer('checkpoints')
     avg_loss = tf.keras.metrics.Mean(name='loss', dtype=tf.float32)
     dataset='mnist'
-    train_iterator, test_iterator = get_data.get_data(dataset, BATCH_SIZE)
-    train_its = int(60000/BATCH_SIZE)
+    train_iterator, test_iterator = get_data.get_data_alt(1000, BATCH_SIZE)
+    # train_its = int(60000/BATCH_SIZE)
 
     #checkpointing 
     checkpoint_path=Path('./checkpoints/flow_train')
@@ -88,8 +91,9 @@ def main():
     for e in range(10):
         if flag:
             break
-        for i in range(train_its):
-            x, y = train_iterator()
+        for x in tqdm(train_iterator):
+            # x, y = train_iterator()
+            x = x['img']
             # print(x.shape)
             with tf.GradientTape() as tape:
                 log_prob_loss = loss()
