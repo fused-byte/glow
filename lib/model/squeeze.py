@@ -5,10 +5,12 @@ tfd = tfp.distributions
 tfb = tfp.bijectors
 
 class Squeeze(tfb.Bijector):
-    def __init__(self, factor=2, name='squeeze', forward_min_event_ndims=0):
+    def __init__(self, factor=2, name='squeeze', forward_min_event_ndims=0, inverse_min_event_ndims=0, validate_args=False):
         self._factor = factor
         #self.name = name
-        super(Squeeze, self).__init__(name=name, is_constant_jacobian = True, forward_min_event_ndims=forward_min_event_ndims)
+        super(Squeeze, self).__init__(name=name, is_constant_jacobian = True,
+                                      forward_min_event_ndims=forward_min_event_ndims,
+                                      inverse_min_event_ndims=inverse_min_event_ndims)
         
     @property
     def factor(self):

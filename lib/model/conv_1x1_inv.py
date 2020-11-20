@@ -47,16 +47,20 @@ def invertible_1x1_conv_LU(event_size, batch_shape=(), seed=None, dtype=tf.float
         # we do LU decomposition of orthogonal matrix 
         # 0th index gives lower_upper triangular matrix
         # 1 index give permutation matrix.
-        lower_upper, permutation = tf.linalg.lu(random_orthornormal)
+        #lower_upper, permutation = tf.linalg.lu(random_orthornormal)
 
-        lower_upper = tf.Variable(
-                        initial_value=lower_upper,
-                        trainable = True,
-                        name='lower_upper')
-        permutation = tf.Variable(
-                        initial_value=permutation,
-                        trainable=False,
-                        name='permutation')
+        lower_upper = tf.Variable(tf.linalg.lu(random_orthornormal)[0], trainable=True, name='lower_upper')
+        # ref https://github.com/tensorflow/probability/issues/545
+        permutation = tf.Variable(tf.linalg.lu(random_orthornormal)[1], trainable=False, name='permutation')
+
+        # lower_upper = tf.Variable(
+        #                 initial_value=lower_upper,
+        #                 trainable = True,
+        #                 name='lower_upper')
+        # permutation = tf.Variable(
+        #                 initial_value=permutation,
+        #                 trainable=False,
+        #                 name='permutation')
         # print("lower upper: ", lower_upper)
     inv_conv = tfb.MatvecLU(lower_upper, permutation, name=name)
 

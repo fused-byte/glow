@@ -73,7 +73,7 @@ class ACL(tfp.bijectors.Bijector):
         # t = h[:,:,:,0::2]
         # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
         # log_s = keras.activations.tanh(h[:,:,:,1::2])
-        scale = tf.math.exp(log_s)
+        scale = tf.exp(log_s)
         y_a = scale * x_a + t
         y = tf.concat([y_a,y_b], axis=-1)
         return y
@@ -86,7 +86,7 @@ class ACL(tfp.bijectors.Bijector):
         log_s, t = self.nn(y_b)
         # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
         # log_s = keras.activations.tanh(h[:,:,:,1::2])
-        scale = tf.math.exp(log_s)
+        scale = tf.exp(log_s)
         x_a = (y_a - t)/scale
         x_b = y_b
         x = tf.concat([x_a, x_b], axis = -1)
@@ -97,7 +97,7 @@ class ACL(tfp.bijectors.Bijector):
         log_s, _ = self.nn(x_b)
         # h = self.nn(x_b)
         # log_s = keras.activations.tanh(h[:,:,:,1::2])
-        scale = tf.math.exp(log_s)
+        scale = tf.exp(log_s)
         # scale = keras.activations.sigmoid(h[:,:,:,1::2] + 2.)
         # log_s = tf.math.log(scale)
 

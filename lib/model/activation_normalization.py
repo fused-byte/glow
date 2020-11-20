@@ -17,8 +17,8 @@ class ACT(tfp.bijectors.Bijector):
         self.bias = tf.Variable(tf.random.normal([channels]),name=name + "/bias")
 
     def actnorm_mean_var(self, x):
-        mean = tf.reduce_mean(x, axis=[0, 1, 2])
-        var = tf.reduce_mean((x-mean) ** 2, axis=[0, 1, 2])
+        mean = tf.math.reduce_mean(x, axis=[0, 1, 2])
+        var = tf.math.reduce_mean((x-mean) ** 2, axis=[0, 1, 2])
         stdVar = tf.math.sqrt(var) + 1e-6
         log_scale = tf.math.log(1./ stdVar / self.log_scale_factor) * self.log_scale_factor
         # print('log scale shape: ', log_scale.shape)
